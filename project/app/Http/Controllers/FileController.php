@@ -84,4 +84,12 @@ class FileController extends Controller
             return response()->json(['message' => 'Erro ao processar o download.'], 500);
         }
     }
+
+    public function history(Request $request): JsonResponse
+    {
+        return response()->json([
+            'message' => 'Histórico de arquivos recuperado com sucesso.',
+            'files' => FileUpload::filter($request)->get(),
+        ], 200);
+    }
 }
