@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\FileUpload;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
 class FileController extends Controller
 {
-    public function upload(Request $request)
+    public function upload(Request $request): JsonResponse
     {
         try {
             if (!$request->hasFile('file')) {
@@ -57,7 +58,7 @@ class FileController extends Controller
         }
     }
 
-    public function download($fileHash)
+    public function download($fileHash): JsonResponse
     {
         try {
             $file = FileUpload::where('file_hash', $fileHash)->first();
@@ -69,9 +70,13 @@ class FileController extends Controller
             $filePath = 'uploads/' . $file->file_hash . '.' . pathinfo($file->file_name, PATHINFO_EXTENSION);
 
             if (Storage::disk('public')->exists($filePath)) {
-                $downloadName = $file->file_name;
+                $fileUrl = asset('storage/' . $filePath);
 
-                return response()->download(storage_path('app/public/' . $filePath), $downloadName);
+                return response()->json([
+                    'message' => 'Arquivo encontrado.',
+                    'download_link' => $fileUrl,
+                    'file_name' => $file->file_name
+                ], 200);
             }
 
             return response()->json(['message' => 'Arquivo não encontrado.'], 404);
