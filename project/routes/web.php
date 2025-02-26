@@ -1,10 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\FileController;
+use App\Http\Controllers\SiteController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('download/{filehash}', [FileController::class, 'download'])->name('file.download');
+Route::get('/historico', [SiteController::class, 'history'])->name('site.history');
+
