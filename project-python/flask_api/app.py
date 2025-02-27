@@ -27,23 +27,39 @@ def process_csv():
         else:
             return jsonify({"error": "Nenhuma coluna desejada fornecida"}), 400
 
+        # filtros opcionais
+        tckr_symb_filter = request.form.get('tckr_symb')
+        rpt_dt_filter = request.form.get('rpt_dt')
+
+        # paginação
         page = int(request.form.get('page', 1))
         per_page = int(request.form.get('per_page', 20))
-
         offset = (page - 1) * per_page
-        paginated_lines = lines[offset:offset + per_page]
-
+ 
         response_data = []
-        for line in paginated_lines:
-            row = line.split(';')
-            if len(row) > 0:
-                row_assoc = {}
-                for i, value in enumerate(row):
-                    column_name = header[i]
-                    if column_name in desired_columns:
-                        row_assoc[column_name] = value
-                if row_assoc:
+        if tckr_symb_filter or rpt_dt_filter:
+            for line in lines:
+                row = line.split(';')
+                row_assoc = {header[i]: value for i, value in enumerate(row) if header[i] in desired_columns}
+
+                # filtragem 
+                if (not tckr_symb_filter or row_assoc.get('TckrSymb') == tckr_symb_filter) and (not rpt_dt_filter or row_assoc.get('RptDt') == rpt_dt_filter):
                     response_data.append(row_assoc)
+                    
+            response_data = response_data[offset:offset + per_page]
+        else:
+            paginated_lines = lines[offset:offset + per_page]
+
+            for line in paginated_lines:
+                row = line.split(';')
+                if len(row) > 0:
+                    row_assoc = {}
+                    for i, value in enumerate(row):
+                        column_name = header[i]
+                        if column_name in desired_columns:
+                            row_assoc[column_name] = value
+                    if row_assoc:
+                        response_data.append(row_assoc)
 
         return jsonify({
             "message": "Conteúdo do arquivo recuperado com sucesso.",

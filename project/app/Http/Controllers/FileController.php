@@ -99,25 +99,28 @@ class FileController extends Controller
                 'CrpnNm'
             ];
 
-            $page = $request->input('page', 1);
-            $perPage = 20;
+            $params = [
+                'page' => $request->input('page', 1),
+                'per_page' => 20,
+                'rpt_dt' => $request->input('rpt_dt') ?? null,
+                'tckr_symb' => $request->input('tckr_symb') ?? null,
+                'desired_columns' => json_encode($desiredColumns)
+            ];
 
             $fileExtension = pathinfo($file->file_name, PATHINFO_EXTENSION);
-            if (strtolower($fileExtension) !== 'csv') {
+            if (strtolower($fileExtension) === 'xlsx' || strtolower($fileExtension) === 'xlxlssx') {
                 return response()->json([
                     'message' => 'O arquivo não é um CSV. (TODO -> EXCEL)',
                     'data' => []
                 ], 400);
-            } else {
+            } else if (strtolower($fileExtension) === 'csv'){
                 $response = Http::attach('file', $fileContents, $file->file_name)
-                    ->post(env('PYTHON_API_URL') . '/process_csv', [
-                        'page' => $page,
-                        'per_page' => $perPage,
-                        'desired_columns' => json_encode($desiredColumns)
-                    ]);
+                    ->post(env('PYTHON_API_URL') . '/process_csv', $params);
 
                 $responseData = $response->json();
                 //$responseData = $this->processCsvContent($fileContents, $desiredColumns, $page, $perPage); //leitor versão laravel -> utilizar apenas o python (laravel está incompleto)
+            } else {
+                return response()->json(['message' => 'Arquivo inválido.'], 400);
             }
 
             return response()->json($responseData);
