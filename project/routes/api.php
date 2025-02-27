@@ -10,7 +10,6 @@ Route::get('/user', function (Request $request) {
 
 Route::post('/upload', [FileController::class, 'upload']);
 Route::get('/history', [FileController::class, 'history']);
-Route::get('/download/{filehash}', [FileController::class, 'download'])->name('download');
 Route::get('/content/{filehash}', [FileController::class, 'content'])->name('content');
 
 

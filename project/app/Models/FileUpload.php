@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use App\Helpers\DateHelper;
 
@@ -17,11 +18,23 @@ class FileUpload extends Model
         'path',
     ];
 
-    protected $appends = ['created_at_formatted'];
+    protected $appends = ['created_at_formatted', 'download_link'];
 
     public function getCreatedAtFormattedAttribute(): string
     {
         return DateHelper::formatToBrazilianDate($this->created_at);
+    }
+
+    public function getDownloadLinkAttribute(): string
+    {
+        $filePath = 'uploads/' . $this->file_hash . '.' . pathinfo($this->file_name, PATHINFO_EXTENSION);
+
+        $fileUrl = '';
+        if (Storage::disk('public')->exists($filePath)) {
+            $fileUrl = asset('storage/' . $filePath);
+        }
+
+        return $fileUrl;
     }
 
     public function scopeFilter(Builder $query, Request $request): Builder

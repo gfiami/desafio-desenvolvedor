@@ -58,33 +58,6 @@ class FileController extends Controller
         }
     }
 
-    public function download($fileHash): JsonResponse
-    {
-        try {
-            $file = FileUpload::where('file_hash', $fileHash)->first();
-
-            if (!$file) {
-                return response()->json(['message' => 'Arquivo não encontrado.'], 404);
-            }
-
-            $filePath = 'uploads/' . $file->file_hash . '.' . pathinfo($file->file_name, PATHINFO_EXTENSION);
-
-            if (Storage::disk('public')->exists($filePath)) {
-                $fileUrl = asset('storage/' . $filePath);
-
-                return response()->json([
-                    'message' => 'Arquivo encontrado.',
-                    'download_link' => $fileUrl,
-                    'file_name' => $file->file_name
-                ], 200);
-            }
-
-            return response()->json(['message' => 'Arquivo não encontrado.'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao processar o download.'], 500);
-        }
-    }
-
     public function history(Request $request): JsonResponse
     {
         return response()->json([
