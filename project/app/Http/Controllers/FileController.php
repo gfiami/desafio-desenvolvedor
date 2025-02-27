@@ -7,6 +7,7 @@ use App\Models\FileUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 
 class FileController extends Controller
 {
@@ -62,7 +63,7 @@ class FileController extends Controller
     {
         return response()->json([
             'message' => 'Histórico de arquivos recuperado com sucesso.',
-            'files' => FileUpload::filter($request)->get(),
+            'data' => FileUpload::filter($request)->get(),
         ], 200);
     }
 
@@ -108,13 +109,18 @@ class FileController extends Controller
                     'data' => []
                 ], 400);
             } else {
-                $responseData = $this->processCsvContent($fileContents, $desiredColumns, $page, $perPage);
+                $response = Http::attach('file', $fileContents, $file->file_name)
+                    ->post(env('PYTHON_API_URL') . '/process_csv', [
+                        'page' => $page,
+                        'per_page' => $perPage,
+                        'desired_columns' => json_encode($desiredColumns)
+                    ]);
+
+                $responseData = $response->json();
+                //$responseData = $this->processCsvContent($fileContents, $desiredColumns, $page, $perPage); //leitor versão laravel -> utilizar apenas o python (laravel está incompleto)
             }
 
-            return response()->json([
-                'message' => 'Conteúdo do arquivo recuperado com sucesso.',
-                'data' => $responseData
-            ], 200);
+            return response()->json($responseData);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erro ao processar o conteúdo do arquivo.',
@@ -123,36 +129,37 @@ class FileController extends Controller
         }
     }
 
-    private function processCsvContent($fileContents, $desiredColumns, $page, $perPage): array
-    {
-        $lines = explode("\n", $fileContents);
+    // Comentado pois não será utilizado -> leitor será no python
+    // private function processCsvContent($fileContents, $desiredColumns, $page, $perPage): array
+    // {
+    //     $lines = explode("\n", $fileContents);
 
-        //checa linha inválida
-        $firstLine = trim($lines[0]);
-        if (str_contains($firstLine, 'Status do Arquivo: Final')) {
-            array_shift($lines);
-        }
-        $header = str_getcsv(array_shift($lines), ';');
+    //     //checa linha inválida
+    //     $firstLine = trim($lines[0]);
+    //     if (str_contains($firstLine, 'Status do Arquivo: Final')) {
+    //         array_shift($lines);
+    //     }
+    //     $header = str_getcsv(array_shift($lines), ';');
 
-        $offset = ($page - 1) * $perPage;
-        $paginatedLines = array_slice($lines, $offset, $perPage);
+    //     $offset = ($page - 1) * $perPage;
+    //     $paginatedLines = array_slice($lines, $offset, $perPage);
 
-        $responseData = [];
-        foreach ($paginatedLines as $line) {
-            $row = str_getcsv($line, ';');
-            if (count($row) > 0) {
-                $rowAssoc = [];
-                foreach ($row as $key => $value) {
-                    $columnName = $header[$key];
-                    // se a coluna estiver no array das desejadas a adiciona ao array de resposta
-                    if (in_array($columnName, $desiredColumns)) {
-                        $rowAssoc[$columnName] = $value;
-                    }
-                }
-                $responseData[] = $rowAssoc;
-            }
-        }
+    //     $responseData = [];
+    //     foreach ($paginatedLines as $line) {
+    //         $row = str_getcsv($line, ';');
+    //         if (count($row) > 0) {
+    //             $rowAssoc = [];
+    //             foreach ($row as $key => $value) {
+    //                 $columnName = $header[$key];
+    //                 // se a coluna estiver no array das desejadas a adiciona ao array de resposta
+    //                 if (in_array($columnName, $desiredColumns)) {
+    //                     $rowAssoc[$columnName] = $value;
+    //                 }
+    //             }
+    //             $responseData[] = $rowAssoc;
+    //         }
+    //     }
 
-        return $responseData;
-    }
+    //     return $responseData;
+    // }
 }
