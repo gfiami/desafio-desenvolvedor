@@ -128,30 +128,24 @@ def process_excel():
             except Exception as e:
                 return jsonify({"error": f"Erro ao converter rpt_dt_filter: {str(e)}"}), 400
 
+        # aplicar filtros
+        filtered_data = data[desired_columns]
+        
+        if tckr_symb_filter:
+            filtered_data = filtered_data[filtered_data['TckrSymb'] == tckr_symb_filter]
+
+        if rpt_dt_filter:
+            filtered_data = filtered_data[pd.to_datetime(filtered_data['RptDt'], errors='coerce') == rpt_dt_filter]
+
         # paginação
         page = int(request.form.get('page', 1))
         per_page = int(request.form.get('per_page', 20))
         offset = (page - 1) * per_page
 
-        response_data = []
-        filtered_data = data[desired_columns]
-        rows_added = 0
+        # aplicar a paginação após os filtros
+        paginated_data = filtered_data.iloc[offset:offset + per_page]
 
-        if tckr_symb_filter or rpt_dt_filter:
-            for index, row in filtered_data.iterrows():
-                row_assoc = row.to_dict()
-
-                if (not tckr_symb_filter or row_assoc.get('TckrSymb') == tckr_symb_filter) and \
-                   (not rpt_dt_filter or pd.to_datetime(row_assoc.get('RptDt'), errors='coerce') == rpt_dt_filter):
-
-                    if rows_added < per_page:
-                        response_data.append(row_assoc)
-                        rows_added += 1
-                    else:
-                        break
-        else:
-            paginated_data = filtered_data.iloc[offset:offset + per_page]
-            response_data = paginated_data.to_dict(orient='records')
+        response_data = paginated_data.to_dict(orient='records')
 
         return jsonify({
             "message": "Conteúdo do arquivo recuperado com sucesso.",

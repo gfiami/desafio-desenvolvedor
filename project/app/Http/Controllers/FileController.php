@@ -129,7 +129,7 @@ class FileController extends Controller
             }
 
             $fileExtension = pathinfo($file->file_name, PATHINFO_EXTENSION);
-            if (strtolower($fileExtension) === 'xlsx' || strtolower($fileExtension) === 'xlxlssx') {
+            if (strtolower($fileExtension) === 'xls' || strtolower($fileExtension) === 'xlsx') {
                 $response = Http::attach('file', $fileContents, $file->file_name)
                     ->post(env('PYTHON_API_URL') . '/process_excel', $params);
             } else if (strtolower($fileExtension) === 'csv') {
