@@ -109,19 +109,17 @@ class FileController extends Controller
 
             $fileExtension = pathinfo($file->file_name, PATHINFO_EXTENSION);
             if (strtolower($fileExtension) === 'xlsx' || strtolower($fileExtension) === 'xlxlssx') {
-                return response()->json([
-                    'message' => 'O arquivo não é um CSV. (TODO -> EXCEL)',
-                    'data' => []
-                ], 400);
+                $response = Http::attach('file', $fileContents, $file->file_name)
+                    ->post(env('PYTHON_API_URL') . '/process_excel', $params);
+
             } else if (strtolower($fileExtension) === 'csv'){
                 $response = Http::attach('file', $fileContents, $file->file_name)
                     ->post(env('PYTHON_API_URL') . '/process_csv', $params);
-
-                $responseData = $response->json();
                 //$responseData = $this->processCsvContent($fileContents, $desiredColumns, $page, $perPage); //leitor versão laravel -> utilizar apenas o python (laravel está incompleto)
             } else {
                 return response()->json(['message' => 'Arquivo inválido.'], 400);
             }
+            $responseData = $response->json();
 
             return response()->json($responseData);
         } catch (\Exception $e) {
