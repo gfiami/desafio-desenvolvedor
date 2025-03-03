@@ -37,14 +37,16 @@ npm install
 #### 1.3.2. Configurar as Variáveis de Ambiente
 
 Clonar e configurar arquivo .env
+
 As principais definições necessárias no .env são:
+
 -DB_DATABASE|DB_USERNAME|DB_PASSWORD
+
 -PYTHON_API_URL
 
 ```
 cp .env.example .env
 php artisan key:generate
-
 ```
 
 #### 1.3.3. Rodar as migrations
@@ -52,7 +54,6 @@ php artisan key:generate
 O projeto precisa de algumas tabelas para funcionar corretamente. Execute as migrations para criá-las no banco de dados.
 ```
 php artisan migrate
-
 ```
 
 ### 1.3.4. Linkar storage
@@ -93,7 +94,6 @@ pip install -r requirements.txt
 ```
 cd flask_api
 python app.py
-
 ```
 
 ## 2. Endpoints
@@ -151,6 +151,7 @@ Exemplo de requisição:
 Após realizar o login, o token de autenticação deve ser incluído nas requisições subsequentes, no cabeçalho ```Authorization``` como um Bearer Token. Além disso, para garantir que a resposta seja recebida no formato JSON, o cabeçalho Accept deve ser configurado como application/json.
 
 O token recebido no login deve ser posto no Authorization Bearer Token.
+
 Além disso, definir no header o Accept como application/json
 
 #### 2.2.1. Upload
@@ -211,16 +212,17 @@ rpt_dt: (Opcional) Filtra resultados com a coluna "RptDt" igual ao valor desejad
 tckr_symb: (Opcional) Filtra resultados com a coluna "TckrSymb" igual ao valor desejado.
 ```
 
-Exemplo de resultado:
+Exemplo de Endpoint e Filtros:
 ```
-file_hash: 0d6a99fba8069d353c918bfd007e5525c24935d79721b8de5cfe81a6c5a1ac39
-filtros: 
+GET api/content/0d6a99fba8069d353c918bfd007e5525c24935d79721b8de5cfe81a6c5a1ac39
 {
   rpt_dt: 2024-08-23,
   tckr_symb:A1EG34R
 }
+```
 
-resultado:
+Exemplo de resultado:
+```
 {
     "data": [
         {
