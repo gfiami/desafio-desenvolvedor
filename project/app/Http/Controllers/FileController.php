@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 
 class FileController extends Controller
 {
@@ -61,11 +62,23 @@ class FileController extends Controller
 
     public function history(Request $request): JsonResponse
     {
+        $cacheKey = 'file_upload_history_' . md5($request->fullUrl());
+        $history = Cache::get($cacheKey);
+
+        if (!$history) {
+            $history = FileUpload::filter($request)->get();
+            Cache::put($cacheKey, $history, 1440);
+            $usedCache = false;
+        } else {
+            $usedCache = true;
+        }
+
         return response()->json([
-            'message' => 'Histórico de arquivos recuperado com sucesso.',
-            'data' => FileUpload::filter($request)->get(),
+            'message' => $usedCache ? 'Histórico de arquivos recuperado do cache.' : 'Histórico de arquivos recuperado com sucesso.',
+            'data' => $history,
         ], 200);
     }
+
 
     public function content($fileHash, Request $request): JsonResponse
     {
@@ -107,12 +120,19 @@ class FileController extends Controller
                 'desired_columns' => json_encode($desiredColumns)
             ];
 
+            $cacheKey = 'file_content_' . $fileHash . '_' . md5(json_encode($params));
+
+            $cachedResponse = Cache::get($cacheKey);
+
+            if ($cachedResponse) {
+                return response()->json($cachedResponse);
+            }
+
             $fileExtension = pathinfo($file->file_name, PATHINFO_EXTENSION);
             if (strtolower($fileExtension) === 'xlsx' || strtolower($fileExtension) === 'xlxlssx') {
                 $response = Http::attach('file', $fileContents, $file->file_name)
                     ->post(env('PYTHON_API_URL') . '/process_excel', $params);
-
-            } else if (strtolower($fileExtension) === 'csv'){
+            } else if (strtolower($fileExtension) === 'csv') {
                 $response = Http::attach('file', $fileContents, $file->file_name)
                     ->post(env('PYTHON_API_URL') . '/process_csv', $params);
                 //$responseData = $this->processCsvContent($fileContents, $desiredColumns, $page, $perPage); //leitor versão laravel -> utilizar apenas o python (laravel está incompleto)
@@ -120,6 +140,7 @@ class FileController extends Controller
                 return response()->json(['message' => 'Arquivo inválido.'], 400);
             }
             $responseData = $response->json();
+            Cache::put($cacheKey, $responseData, 1440);
 
             return response()->json($responseData);
         } catch (\Exception $e) {
